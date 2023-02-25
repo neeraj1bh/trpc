@@ -36,13 +36,9 @@ const Chat = () => {
   }
 
   const handleSubmit = () => {
-
     console.log("clicked");
     // check image exists upload to s3
     // db call
-
-
-
   };
 
   return (
@@ -62,6 +58,11 @@ const Chat = () => {
           value={textInput}
           onChange={(e) => {
             setTextInput(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && textInput) {
+              handleSubmit();
+            }
           }}
           placeholder="Enter Message ..."
           className="w-80 rounded border-2 border-gray-700 px-4 py-2"

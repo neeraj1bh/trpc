@@ -1,4 +1,5 @@
-import Image from "next/image";
+import { useState } from "react";
+import { Trash } from "./../assets/icons/Trash";
 
 interface MessageProps {
   textMessage: string;
@@ -7,9 +8,24 @@ interface MessageProps {
 }
 
 const Message = ({ textMessage, imageUrl, timeOfMessage }: MessageProps) => {
+  const [showDelete, setShowDelete] = useState(false);
   return (
     <div className="">
-      <div className="inline-block max-w-sm bg-gray-200 ">
+      <div
+        className="relative inline-block max-w-sm bg-gray-200 "
+        onMouseOver={() => {
+          setShowDelete(true);
+        }}
+        onMouseLeave={() => {
+          setShowDelete(false);
+        }}
+      >
+        <div
+          className="absolute -right-7 top-1 py-1 pl-7 "
+
+        >
+          {showDelete ? <Trash className="h-5 w-5" onClick={() => {}} /> : null}
+        </div>
         <p className="p-2 text-sm">{textMessage}</p>
         {imageUrl ? (
           //   <Image
