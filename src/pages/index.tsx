@@ -3,51 +3,54 @@ import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
 import Chat from "Y/components/Chat";
+import { Message } from "Y/types";
 
 import { api } from "Y/utils/api";
 
-interface FormData {
-  name: string;
-  text: string;
-  imageUrl: string;
-}
-
 const Home: NextPage = () => {
-  const [data, setData] = useState<FormData>({
-    name: "",
-    text: "",
-    imageUrl: "",
+  const trpc = api.useContext();
+
+  const { mutate } = api.user.addMessage.useMutation({
+    onMutate: async (newPost) => {
+      await trpc.user.all.cancel();
+      const prevMessageData = trpc.user.all.getData();
+
+      trpc.user.all.setData(undefined, (prev: Message) => {
+        const newMessage = newPost;
+        if (!prev) return [newMessage];
+        return [...prev, newMessage];
+      });
+
+      return { prevMessageData };
+    },
+    onError: (err, newPost, ctx) => {
+      if (!ctx) return;
+      trpc.user.all.setData(undefined, () => ctx.prevMessageData);
+    },
+    onSettled: async () => {
+      await trpc.user.all.invalidate();
+    },
   });
 
-  //   const handelDescriptionChange = (value: string) => {
-  //     setData({
-  //       ...data,
-  //       description: value,
-  //     });
-  //   };
+  const { mutate: deleteMutation } = api.user.delete.useMutation({
+    onMutate: async (deleteId) => {
+      await trpc.user.all.cancel();
 
-  //   const handelTitleChange = (value: string) => {
-  //     setData({
-  //       ...data,
-  //       title: value,
-  //     });
-  //   };
-  const hello = api.example.hello.useQuery({ text: "from tRPC" });
-  const utils = api.useContext();
+      const prevMessageData = trpc.user.all.getData();
 
-  const addNew = api.user.addMessage.useMutation({
-    onMutate: (newPost) => {
-      utils.user.getData.cancel();
-      const prevData = utils.user.getData.getData();
+      trpc.user.all.setData(undefined, (prev: Message) => {
+        if (!prev) return prevMessageData;
+        return prev.filter((t: Message) => t._id.toString() !== deleteId);
+      });
 
-      utils.user.getData.setData(undefined, ({ data }) => [...data, newPost]);
-      return { prevData };
+      return { prevMessageData };
     },
-    onError(err, newPost, ctx) {
-      utils.user.getData.setData(undefined, ctx.prevData);
+    onError: (err, newPost, ctx) => {
+      if (!ctx) return;
+      trpc.user.all.setData(undefined, () => ctx.prevMessageData);
     },
-    onSettled: () => {
-      utils.user.getData.invalidate();
+    onSettled: async () => {
+      await trpc.user.all.invalidate();
     },
   });
   return (
@@ -58,14 +61,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className=" flex h-[100vh] items-center justify-center bg-gradient-to-bl  from-red-200 via-red-300 to-yellow-200 text-gray-900">
-        {/**
-         * The type is defined and can be autocompleted
-         * 💡 Tip: Hover over `data` to see the result type
-         * 💡 Tip: Cxl+Click (or CTRL+Click) on `text` to go to the server definition
-         * 💡 Tip: Secondary click on `text` and "Rename Symbol" to rename it both on the client & server
-         */}
-        {/* <h1>{result.data.text}</h1> */}
-        <Chat />
+        <Chat addMessage={mutate} deleteMutation={deleteMutation} />
       </div>
     </>
   );

@@ -1,28 +1,34 @@
-import mongoose, { model, Schema } from "mongoose";
+import mongoose, { Model, model, ObjectId, Schema } from "mongoose";
 
-export interface IUser {
+export interface Message {
   text: string;
   imageUrl: string;
   isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  _id: ObjectId;
 }
 
-const messageSchema = new Schema<IUser>({
-  text: {
-    type: String,
-    required: true,
+const messageSchema = new Schema<Message>(
+  {
+    text: {
+      type: String,
+      required: true,
+    },
+    imageUrl: {
+      type: String,
+    },
+    isDeleted: {
+      type: Boolean,
+    },
   },
-  imageUrl: {
-    type: String,
-  },
-  isDeleted: {
-    type: Boolean,
-  },
-});
+  { timestamps: true }
+);
 
-const userModel = () => {
-  return mongoose.models && mongoose.models.User
-    ? mongoose.models.User
-    : model<IUser>("User", messageSchema);
+const messageModel = (): Model<Message> => {
+  return mongoose.models && mongoose.models.Message
+    ? mongoose.models.Message
+    : model<Message>("Message", messageSchema);
 };
 
-export default userModel;
+export default messageModel;

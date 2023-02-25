@@ -1,5 +1,5 @@
 import { z } from "zod";
-import userModel, { IUser } from "src/models/user.model";
+import messageModel from "src/models/user.model";
 import { createTRPCRouter, publicProcedure } from "Y/server/api/trpc";
 
 export const userRouter = createTRPCRouter({
@@ -14,28 +14,35 @@ export const userRouter = createTRPCRouter({
         data: `hello ${input.text}`,
       };
     }),
+
   addMessage: publicProcedure
     .input(
       z.object({
-        text: z.string(),
+        text: z.string({
+          required_error: "Describe your todo",
+        }),
+        imageUrl: z.string(),
+        isDeleted: z.boolean(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      const userModelData: IUser[] = await userModel().create({
-        input,
-      });
-      return userModelData;
+    .mutation(async ({ input }) => {
+      return await messageModel().create(input);
     }),
-  getData: publicProcedure
-    .input(
-      z.object({
-        text: z.string(),
-      })
-    )
-    .query(async ({ input, ctx }) => {
-      const userModelData: IUser[] = await userModel().find({});
-      return userModelData;
-    }),
+
+  all: publicProcedure.query(async () => {
+    return await messageModel().find({
+      isDeleted: false,
+    });
+  }),
+
+  delete: publicProcedure.input(z.string()).mutation(async ({ input }) => {
+    await messageModel().updateOne({
+      where: {
+        _id: input,
+      },
+      isDeleted: true,
+    });
+  }),
 });
 
 export default userRouter;
