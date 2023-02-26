@@ -6,7 +6,8 @@ export interface Message {
   createdAt: Date;
   updatedAt: Date;
   _id: ObjectId;
-  imageId: string;
+  imageId?: string;
+  hasImage?: Boolean;
 }
 
 const messageSchema = new Schema<Message>(
@@ -17,6 +18,7 @@ const messageSchema = new Schema<Message>(
     },
     isDeleted: {
       type: Boolean,
+      default: false,
     },
     imageId: {
       type: String,

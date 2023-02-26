@@ -10,29 +10,22 @@ interface MessageProps {
   id: string;
 }
 
-const Message = ({
+const Messages = ({
   textMessage,
   imageUrl,
   timeOfMessage,
   deleteRecord,
   id,
 }: MessageProps) => {
-  const [showDelete, setShowDelete] = useState(false);
   console.log("imageUrl", imageUrl);
   return (
-    <div
-      className=""
-      //  onClick={() => deleteRecord(id)}
-      onMouseOver={() => {
-        setShowDelete(true);
-      }}
-      onMouseLeave={() => {
-        setShowDelete(false);
-      }}
-    >
-      <div className="relative inline-block max-w-sm bg-gray-200 ">
-        {showDelete ? <Trash className="h-5 w-5" onClick={() => {}} /> : null}
-        <p className="p-2 text-sm">{textMessage}</p>
+    <div className="group">
+      <div className="relative inline-block max-w-sm  ">
+        <div className="top-1 -right-7 hidden group-hover:absolute group-hover:block">
+          <Trash className="h-5 w-6" onClick={() => deleteRecord(id)} />
+        </div>
+
+        <p className="bg-gray-200 p-2 text-sm">{textMessage}</p>
         {imageUrl ? (
           <Image
             width={150}
@@ -43,11 +36,11 @@ const Message = ({
           />
         ) : null}
       </div>
-      <p className=" mt-1 text-xs text-gray-500">
+      <p className="mt-1  text-xs text-gray-500">
         {timeOfMessage.toDateString()}
       </p>
     </div>
   );
 };
 
-export default Message;
+export default Messages;

@@ -1,7 +1,6 @@
 import { ChangeEvent, useState } from "react";
 import { api } from "Y/utils/api";
-import { v4 as uuidv4 } from "uuid";
-import Message from "./Message";
+import Messages from "./Messages";
 import axios from "axios";
 
 const Chat = () => {
@@ -19,7 +18,10 @@ const Chat = () => {
           text: "placeholder",
           imageUrl: "https://via.placeholder.com/150",
           isDeleted: false,
-          imageId: uuidv4(),
+          imageId: "temp-id",
+          hasImage: true,
+          createdAt: new Date(),
+          _id: "temp-id",
         };
         if (!prev) return [newMessage];
         return [...prev, newMessage];
@@ -80,38 +82,40 @@ const Chat = () => {
   }
 
   const handleSubmit = async () => {
-    const UPLOAD_MAX_FILE_SIZE = 500000;
+    const UPLOAD_MAX_FILE_SIZE = 5000000;
+    if (image && image.size > UPLOAD_MAX_FILE_SIZE) return;
 
-    if (!image && image.size < UPLOAD_MAX_FILE_SIZE) return;
-
-    const url = await addMutation({
+    let props = {
       text,
-      isDeleted: false,
-      type: image.type,
-      imageId: uuidv4(),
-    });
+      hasImage: !!image,
+      type: image?.type,
+    };
 
-    await axios.put(url, image, {
-      headers: {
-        "Content-type": image.type,
-        "Access-Control-Allow-Origin": "*",
-      },
-    });
+    const url = await addMutation(props);
+
+    if (image && url) {
+      await axios.put(url, image, {
+        headers: {
+          "Content-type": image.type,
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
   };
 
   return (
     <div className="flex max-w-xl flex-col rounded-xl border border-gray-300">
       <div className="flex h-96 max-h-96 flex-col gap-3 overflow-y-scroll rounded-t-xl border-b border-gray-500 bg-gray-50 px-4 py-4 shadow-lg">
         {allMessages.map((message) => {
-          const { imageId, text, createdAt } = message._doc;
+          const { _id, text, createdAt } = message;
           return (
-            <Message
-              key={imageId}
+            <Messages
+              key={_id.toString()}
               textMessage={text}
-              imageUrl={message.url}
+              imageUrl={message?.url}
               timeOfMessage={new Date(createdAt)}
               deleteRecord={deleteMutation}
-              id={imageId}
+              id={_id.toString()}
             />
           );
         })}
@@ -122,6 +126,11 @@ const Chat = () => {
           value={text}
           onChange={(e) => {
             setText(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && text) {
+              handleSubmit;
+            }
           }}
           placeholder="Enter Message ..."
           className="w-80 rounded border-2 border-gray-700 px-4 py-2"
