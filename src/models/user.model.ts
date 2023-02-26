@@ -2,7 +2,6 @@ import mongoose, { Model, model, ObjectId, Schema } from "mongoose";
 
 export interface Message {
   text: string;
-  imageUrl: string;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -14,9 +13,6 @@ const messageSchema = new Schema<Message>(
     text: {
       type: String,
       required: true,
-    },
-    imageUrl: {
-      type: String,
     },
     isDeleted: {
       type: Boolean,

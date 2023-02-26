@@ -1,35 +1,72 @@
 import { ChangeEvent, useState } from "react";
 import { api } from "Y/utils/api";
+import { Message as MessageType } from "Y/types";
 import Message from "./Message";
 
-const messages = [
-  "Life is too short to",
-  "Believe in yourself and all that you are. Know that there is something inside you that is greater than any obstacle.",
-  "Success is not final, failure is not fatal: It is the courage to continue that counts.",
-  "The future belongs to those who believe in the beauty of their dreams.",
-  "It does not matter how slowly you go as long as you do not stop.",
-  "You are never too old to set another goal or to dream a new dream.",
-  "Your time is limited, don't waste it living someone else's life.",
-  "The best way to predict your future is to create it.",
-  "Happiness is not something ready made. It comes from your own actions.",
-  "The only way to do great work is to love what you do.",
-];
-
-interface Props {
-  addMessage: any;
-  deleteMutation: any;
-}
-
-const Chat = ({ addMessage, deleteMutation }: Props) => {
-  const [imageUrl, setImageUrl] = useState<File>();
-
+const Chat = () => {
+  const [image, setImage] = useState<File>();
   const [text, setText] = useState("");
+  const trpc = api.useContext();
+
+  const { mutate: addMutation } = api.user.addMessage.useMutation({
+    onMutate: async (newPost) => {
+      await trpc.user.all.cancel();
+      const prevMessageData = trpc.user.all.getData();
+
+      trpc.user.all.setData(undefined, (prev) => {
+        const newMessage = {
+          _id: "message-id",
+          text: "placeholder",
+          imageUrl: "https://via.placeholder.com/150",
+          isDeleted: false,
+        };
+        if (!prev) return [newMessage];
+        return [...prev, newMessage];
+      });
+
+      return { prevMessageData };
+    },
+    onError: (err, newPost, ctx) => {
+      if (!ctx) return;
+      trpc.user.all.setData(undefined, () => ctx.prevMessageData);
+    },
+    onSettled: async () => {
+      await trpc.user.all.invalidate();
+    },
+  });
+
+  const { mutate: deleteMutation } = api.user.delete.useMutation({
+    onMutate: async (deleteId) => {
+      await trpc.user.all.cancel();
+
+      const prevMessageData = trpc.user.all.getData();
+
+      trpc.user.all.setData(undefined, (prev) => {
+        if (!prev) return prevMessageData;
+        return prev.filter((t) => t._id.toString() !== deleteId);
+      });
+
+      return { prevMessageData };
+    },
+    onError: (err, newPost, ctx) => {
+      if (!ctx) return;
+      trpc.user.all.setData(undefined, () => ctx.prevMessageData);
+    },
+    onSettled: async () => {
+      await trpc.user.all.invalidate();
+    },
+  });
+
+  const { data: allMessages, isLoading, isError } = api.user.all.useQuery();
+
+  if (isLoading) return <div>Loading messages 🔄</div>;
+  if (isError) return <div>Error fetching messages ❌</div>;
 
   function showPreview(event: ChangeEvent<HTMLInputElement>) {
     if (event.target.files) {
       const file = event.target.files[0];
       if (file) {
-        setImageUrl(file);
+        setImage(file);
         // const reader = new FileReader();
         // reader.readAsDataURL(file);
         // reader.onload = () => {
@@ -39,22 +76,17 @@ const Chat = ({ addMessage, deleteMutation }: Props) => {
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // check image exists upload to s3
     // db call
-
-    addMessage({
-      _id: Math.random(),
-      imageUrl: "https://via.placeholder.com/150",
+    if (!image) return;
+    console.log("image", image);
+    addMutation({
       text,
       isDeleted: false,
+      image,
     });
   };
-
-  const { data: allMessages, isLoading, isError } = api.user.all.useQuery();
-
-  if (isLoading) return <div>Loading messages 🔄</div>;
-  if (isError) return <div>Error fetching messages ❌</div>;
 
   return (
     <div className="flex max-w-xl flex-col rounded-xl border border-gray-300">
@@ -63,7 +95,7 @@ const Chat = ({ addMessage, deleteMutation }: Props) => {
           <Message
             key={message._id.toString()}
             textMessage={message.text}
-            imageUrl={message.imageUrl}
+            imageUrl={"https://via.placeholder.com/150"}
             timeOfMessage={new Date(message.createdAt)}
             deleteRecord={deleteMutation}
             id={message._id.toString()}
