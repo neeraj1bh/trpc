@@ -3,6 +3,7 @@ import messageModel from "src/models/user.model";
 import { createTRPCRouter, publicProcedure } from "Y/server/api/trpc";
 import s3 from "src/utils/aws";
 import { v4 as uuidv4 } from "uuid";
+import { ObjectId } from "mongodb";
 
 const BUCKET_NAME = process.env.IMAGE_STORAGE_S3_BUCKET ?? "chatimagesproject";
 
@@ -43,9 +44,11 @@ export const userRouter = createTRPCRouter({
     }),
 
   all: publicProcedure.query(async () => {
-    const allMessages = await messageModel().find().lean({
-      isDeleted: false,
-    });
+    const allMessages = await messageModel()
+      .find({
+        isDeleted: false,
+      })
+      .lean();
     const extendedImages = await Promise.all(
       allMessages.map(async (message) => {
         // console.log("message", message);
@@ -55,7 +58,7 @@ export const userRouter = createTRPCRouter({
 
           const url = await s3.getSignedUrlPromise("getObject", {
             Bucket: BUCKET_NAME,
-            Expires: 6000,
+            Expires: 100000,
             Key: name,
           });
 
@@ -70,16 +73,22 @@ export const userRouter = createTRPCRouter({
   }),
 
   delete: publicProcedure.input(z.string()).mutation(async ({ input }) => {
-    await messageModel().updateOne(
-      {
-        _id: input,
-      },
-      {
-        $set: {
-          isDeleted: true,
+    console.log({ input });
+    const _id = new ObjectId(input);
+    try {
+      await messageModel().updateOne(
+        {
+          _id,
         },
-      }
-    );
+        {
+          $set: {
+            isDeleted: true,
+          },
+        }
+      );
+    } catch (err) {
+      console.log({ err });
+    }
   }),
 });
 

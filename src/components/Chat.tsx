@@ -15,10 +15,9 @@ const Chat = () => {
 
       trpc.user.all.setData(undefined, (prev) => {
         const newMessage = {
-          text: "placeholder",
-          imageUrl: "https://via.placeholder.com/150",
+          text,
+          url: "https://via.placeholder.com/150",
           isDeleted: false,
-          imageId: "temp-id",
           hasImage: true,
           createdAt: new Date(),
           _id: "temp-id",
@@ -33,9 +32,7 @@ const Chat = () => {
       if (!ctx) return;
       trpc.user.all.setData(undefined, () => ctx.prevMessageData);
     },
-    onSettled: async () => {
-      await trpc.user.all.invalidate();
-    },
+    onSettled: async () => {},
   });
 
   const { mutate: deleteMutation } = api.user.delete.useMutation({
@@ -101,6 +98,8 @@ const Chat = () => {
         },
       });
     }
+
+    await trpc.user.all.refetch();
   };
 
   return (

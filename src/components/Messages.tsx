@@ -17,7 +17,7 @@ const Messages = ({
   deleteRecord,
   id,
 }: MessageProps) => {
-  console.log("imageUrl", imageUrl);
+  console.log({ textMessage, id, imageUrl });
   return (
     <div className="group">
       <div className="relative inline-block max-w-sm  ">
@@ -27,13 +27,7 @@ const Messages = ({
 
         <p className="bg-gray-200 p-2 text-sm">{textMessage}</p>
         {imageUrl ? (
-          <Image
-            width={150}
-            height={150}
-            className="max-w-sm"
-            src={imageUrl ?? ""}
-            alt="image-message"
-          />
+          <img className="max-w-sm" src={imageUrl} alt="image-message" />
         ) : null}
       </div>
       <p className="mt-1  text-xs text-gray-500">
