@@ -1,10 +1,10 @@
-import * as aws from 'aws-sdk';
+import S3 from "aws-sdk/clients/s3";
 
-aws.config.update({
+const s3 = new S3({
   accessKeyId: process.env.ACCESS_KEY,
   secretAccessKey: process.env.SECRET_KEY,
   region: process.env.REGION,
-  signatureVersion: 'v4',
-})
+  signatureVersion: "v4",
+});
 
-export const AWS = aws
+export default s3;

@@ -2,13 +2,14 @@ import { ChangeEvent, useState } from "react";
 import { api } from "Y/utils/api";
 import { Message as MessageType } from "Y/types";
 import Message from "./Message";
+import axios from "axios";
 
 const Chat = () => {
   const [image, setImage] = useState<File>();
   const [text, setText] = useState("");
   const trpc = api.useContext();
 
-  const { mutate: addMutation } = api.user.addMessage.useMutation({
+  const { mutateAsync: addMutation } = api.user.addMessage.useMutation({
     onMutate: async (newPost) => {
       await trpc.user.all.cancel();
       const prevMessageData = trpc.user.all.getData();
@@ -81,11 +82,42 @@ const Chat = () => {
     // db call
     if (!image) return;
     console.log("image", image);
-    addMutation({
+    const url = await addMutation({
       text,
       isDeleted: false,
-      image,
+      type: image.type,
     });
+
+    console.log("dataMutate");
+    // console.log("dataMutate", dataMutate);
+    await axios.put(url, image, {
+      headers: {
+        "Content-type": image.type,
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+
+    // const data = {
+    //   ...dataMutate.fields,
+    //   "Content-Type": image.type,
+    //   image,
+    // };
+    // const formData = new FormData();
+    // console.log("loooooop1");
+
+    // for (const name in data) {
+    //   console.log("name", name, data[name]);
+    //   formData.append(name, data[name]);
+    //   console.log(formData.getAll);
+    // }
+    // console.log("loooooop2");
+
+    // console.log("data, image, formData", data, image, formData);
+
+    // await fetch(dataMutate.url, {
+    //   method: "POST",
+    //   body: formData,
+    // });
   };
 
   return (

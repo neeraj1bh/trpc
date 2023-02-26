@@ -1,14 +1,10 @@
 import { z } from "zod";
 import messageModel from "src/models/user.model";
 import { createTRPCRouter, publicProcedure } from "Y/server/api/trpc";
-import { AWS } from "src/utils/aws";
-import { PresignedPost } from "aws-sdk/clients/s3";
-import FormData from "form-data";
-
-const s3 = new AWS.S3();
+import s3 from "src/utils/aws";
 
 const BUCKET_NAME = process.env.IMAGE_STORAGE_S3_BUCKET ?? "chatimagesproject";
-const UPLOADING_TIME_LIMIT = 30;
+
 const UPLOAD_MAX_FILE_SIZE = 500000;
 const ACCEPTED_IMAGE_TYPES = [
   "image/jpeg",
@@ -37,62 +33,28 @@ export const userRouter = createTRPCRouter({
           required_error: "Describe your todo",
         }),
         isDeleted: z.boolean(),
-        image: z.any(),
-        //   .refine((files) => files?.length == 1, "Image is required.")
-        //   .refine(
-        //     (files) => files?.[0]?.size <= UPLOAD_MAX_FILE_SIZE,
-        //     `Max file size is 5MB.`
-        //   )
-        //   .refine(
-        //     (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
-        //     ".jpg, .jpeg, .png and .webp files are accepted."
-        //   ),
+        type: z.string(z.enum(ACCEPTED_IMAGE_TYPES)),
       })
     )
     .mutation(async ({ input }) => {
       console.log("input", input);
-      const { text, isDeleted, image } = input;
+      const { text, isDeleted, type } = input;
       const messageData = await messageModel().create({
         text,
         isDeleted,
       });
+      const name = messageData._id.toString();
 
-      const { url, fields }: { url: string; fields: any } = await new Promise(
-        (resolve, reject) => {
-          s3.createPresignedPost(
-            {
-              Fields: {
-                key: `${messageData._id}`,
-              },
-              Conditions: [
-                ["starts-with", "$Content-Type", "image/"],
-                ["content-length-range", 0, UPLOAD_MAX_FILE_SIZE],
-              ],
-              Expires: UPLOADING_TIME_LIMIT,
-              Bucket: BUCKET_NAME,
-            },
-            (err, signed) => {
-              if (err) return reject(err);
-              resolve(signed);
-            }
-          );
-        }
-      );
-      //   const { url, fields }: { url: string; fields: any } = await preSigned;
-      const data = {
-        ...fields,
-        "Content-Type": image.type,
-        ...image,
+      const fileParams = {
+        Bucket: BUCKET_NAME,
+        Key: name,
+        Expires: 600,
+        ContentType: type,
+        ACL: "private",
       };
-      console.log(data, image);
-      const formData = new FormData();
-      for (const name in data) {
-        formData.append(name, data[name]);
-      }
-      await fetch(url, {
-        method: "POST",
-        body: formData,
-      });
+
+      const url = await s3.getSignedUrlPromise("putObject", fileParams);
+      return url;
     }),
 
   all: publicProcedure.query(async () => {
