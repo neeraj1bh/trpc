@@ -1,7 +1,9 @@
 import { ChangeEvent, useState } from "react";
 import { api } from "Y/utils/api";
+import { Message } from "src/models/user.model";
 import Messages from "./Messages";
 import axios from "axios";
+import { ObjectId } from "mongodb";
 
 const Chat = () => {
   const [image, setImage] = useState<File>();
@@ -14,13 +16,13 @@ const Chat = () => {
       const prevMessageData = trpc.user.all.getData();
 
       trpc.user.all.setData(undefined, (prev) => {
-        const newMessage = {
+        const newMessage: Message = {
           text,
           url: "https://via.placeholder.com/150",
           isDeleted: false,
-          hasImage: true,
           createdAt: new Date(),
-          _id: "temp-id",
+          updatedAt: new Date(),
+          _id: new ObjectId() as any,
         };
         if (!prev) return [newMessage];
         return [...prev, newMessage];

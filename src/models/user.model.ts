@@ -2,12 +2,12 @@ import mongoose, { Model, model, ObjectId, Schema } from "mongoose";
 
 export interface Message {
   text: string;
-  isDeleted: boolean;
+  isDeleted?: boolean;
   createdAt: Date;
   updatedAt: Date;
   _id: ObjectId;
   imageId?: string;
-  hasImage?: Boolean;
+  url?: string;
 }
 
 const messageSchema = new Schema<Message>(

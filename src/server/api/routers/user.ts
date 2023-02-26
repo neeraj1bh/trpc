@@ -1,9 +1,8 @@
 import { z } from "zod";
-import messageModel from "src/models/user.model";
+import messageModel, { Message } from "src/models/user.model";
 import { createTRPCRouter, publicProcedure } from "Y/server/api/trpc";
 import s3 from "src/utils/aws";
 import { v4 as uuidv4 } from "uuid";
-import { ObjectId } from "mongodb";
 
 const BUCKET_NAME = process.env.IMAGE_STORAGE_S3_BUCKET ?? "chatimagesproject";
 
@@ -43,7 +42,7 @@ export const userRouter = createTRPCRouter({
       }
     }),
 
-  all: publicProcedure.query(async () => {
+  all: publicProcedure.query(async (): Promise<Message[]> => {
     const allMessages = await messageModel()
       .find({
         isDeleted: false,
@@ -74,11 +73,10 @@ export const userRouter = createTRPCRouter({
 
   delete: publicProcedure.input(z.string()).mutation(async ({ input }) => {
     console.log({ input });
-    const _id = new ObjectId(input);
     try {
       await messageModel().updateOne(
         {
-          _id,
+          _id: input,
         },
         {
           $set: {
