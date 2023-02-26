@@ -21,7 +21,10 @@ const config = {
     defaultLocale: "en",
   },
   images: {
-    domains: ["via.placeholder.com"],
+    domains: [
+      "via.placeholder.com",
+      "chatimagesproject.s3.ap-south-1.amazonaws.com",
+    ],
   },
 };
 export default config;

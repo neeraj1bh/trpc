@@ -5,7 +5,6 @@ import s3 from "src/utils/aws";
 
 const BUCKET_NAME = process.env.IMAGE_STORAGE_S3_BUCKET ?? "chatimagesproject";
 
-const UPLOAD_MAX_FILE_SIZE = 500000;
 const ACCEPTED_IMAGE_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -14,18 +13,6 @@ const ACCEPTED_IMAGE_TYPES = [
 ];
 
 export const userRouter = createTRPCRouter({
-  hello: publicProcedure
-    .input(
-      z.object({
-        text: z.string(),
-      })
-    )
-    .query(({ input }) => {
-      return {
-        data: `hello ${input.text}`,
-      };
-    }),
-
   addMessage: publicProcedure
     .input(
       z.object({
@@ -34,21 +21,23 @@ export const userRouter = createTRPCRouter({
         }),
         isDeleted: z.boolean(),
         type: z.string(z.enum(ACCEPTED_IMAGE_TYPES)),
+        imageId: z.string(),
       })
     )
     .mutation(async ({ input }) => {
       console.log("input", input);
-      const { text, isDeleted, type } = input;
-      const messageData = await messageModel().create({
+      const { text, isDeleted, type, imageId } = input;
+      await messageModel().create({
         text,
         isDeleted,
+        imageId,
       });
-      const name = messageData._id.toString();
-
+      const name = `images/${imageId}`;
+      console.log("type", type);
       const fileParams = {
         Bucket: BUCKET_NAME,
         Key: name,
-        Expires: 600,
+        Expires: 6000,
         ContentType: type,
         ACL: "private",
       };
@@ -58,29 +47,38 @@ export const userRouter = createTRPCRouter({
     }),
 
   all: publicProcedure.query(async () => {
-    return await messageModel().find({
+    const allMessages = await messageModel().find({
       isDeleted: false,
     });
+    const extendedImages = await Promise.all(
+      allMessages.map(async (message) => {
+        const name = `images/${message.imageId}`;
+
+        return {
+          url: await s3.getSignedUrlPromise("getObject", {
+            Bucket: BUCKET_NAME,
+            Expires: 6000,
+            Key: name,
+          }),
+          ...message,
+        };
+      })
+    );
+    return extendedImages;
   }),
 
   delete: publicProcedure.input(z.string()).mutation(async ({ input }) => {
-    await messageModel().updateOne({
-      where: {
-        _id: input,
+    await messageModel().updateOne(
+      {
+        imageId: input,
       },
-      isDeleted: true,
-    });
+      {
+        $set: {
+          isDeleted: true,
+        },
+      }
+    );
   }),
-  createPresignedUrl: publicProcedure
-    .input(z.string())
-    .mutation(async ({ input, ctx }) => {
-      //   const userId = ctx.session.user.id;
-      //   const image = await prisma.image.create({
-      //     data: {
-      //       userId,
-      //     }
-      //   })
-    }),
 });
 
 export default userRouter;

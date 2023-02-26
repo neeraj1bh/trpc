@@ -15,6 +15,7 @@ const Message = ({
   deleteRecord,
   id,
 }: MessageProps) => {
+  console.log("imageUrl", imageUrl);
   return (
     <div className="" onClick={() => deleteRecord(id)}>
       <div className="inline-block max-w-sm bg-gray-200 ">

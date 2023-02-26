@@ -6,6 +6,7 @@ export interface Message {
   createdAt: Date;
   updatedAt: Date;
   _id: ObjectId;
+  imageId: string;
 }
 
 const messageSchema = new Schema<Message>(
@@ -16,6 +17,9 @@ const messageSchema = new Schema<Message>(
     },
     isDeleted: {
       type: Boolean,
+    },
+    imageId: {
+      type: String,
     },
   },
   { timestamps: true }

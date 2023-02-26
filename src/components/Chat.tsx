@@ -1,6 +1,6 @@
 import { ChangeEvent, useState } from "react";
 import { api } from "Y/utils/api";
-import { Message as MessageType } from "Y/types";
+import { v4 as uuidv4 } from "uuid";
 import Message from "./Message";
 import axios from "axios";
 
@@ -16,10 +16,10 @@ const Chat = () => {
 
       trpc.user.all.setData(undefined, (prev) => {
         const newMessage = {
-          _id: "message-id",
           text: "placeholder",
           imageUrl: "https://via.placeholder.com/150",
           isDeleted: false,
+          imageId: uuidv4(),
         };
         if (!prev) return [newMessage];
         return [...prev, newMessage];
@@ -58,7 +58,14 @@ const Chat = () => {
     },
   });
 
-  const { data: allMessages, isLoading, isError } = api.user.all.useQuery();
+  const {
+    data: allMessages,
+    isLoading,
+    isError,
+  } = api.user.all.useQuery(
+    undefined,
+    { staleTime: 600 * 1000 } // cache data for 600 seconds
+  );
 
   if (isLoading) return <div>Loading messages 🔄</div>;
   if (isError) return <div>Error fetching messages ❌</div>;
@@ -68,71 +75,46 @@ const Chat = () => {
       const file = event.target.files[0];
       if (file) {
         setImage(file);
-        // const reader = new FileReader();
-        // reader.readAsDataURL(file);
-        // reader.onload = () => {
-        //   setImgSrc(reader.result as string);
-        // };
       }
     }
   }
 
   const handleSubmit = async () => {
-    // check image exists upload to s3
-    // db call
-    if (!image) return;
-    console.log("image", image);
+    const UPLOAD_MAX_FILE_SIZE = 500000;
+
+    if (!image && image.size < UPLOAD_MAX_FILE_SIZE) return;
+
     const url = await addMutation({
       text,
       isDeleted: false,
       type: image.type,
+      imageId: uuidv4(),
     });
 
-    console.log("dataMutate");
-    // console.log("dataMutate", dataMutate);
     await axios.put(url, image, {
       headers: {
         "Content-type": image.type,
         "Access-Control-Allow-Origin": "*",
       },
     });
-
-    // const data = {
-    //   ...dataMutate.fields,
-    //   "Content-Type": image.type,
-    //   image,
-    // };
-    // const formData = new FormData();
-    // console.log("loooooop1");
-
-    // for (const name in data) {
-    //   console.log("name", name, data[name]);
-    //   formData.append(name, data[name]);
-    //   console.log(formData.getAll);
-    // }
-    // console.log("loooooop2");
-
-    // console.log("data, image, formData", data, image, formData);
-
-    // await fetch(dataMutate.url, {
-    //   method: "POST",
-    //   body: formData,
-    // });
   };
 
   return (
     <div className="flex max-w-xl flex-col rounded-xl border border-gray-300">
       <div className="flex h-96 max-h-96 flex-col gap-3 overflow-y-scroll rounded-t-xl border-b border-gray-500 bg-gray-50 px-4 py-4 shadow-lg">
-        {allMessages.map((message) => (
-          <Message
-            key={message._id.toString()}
-            textMessage={message.text}
-            imageUrl={"https://via.placeholder.com/150"}
-            timeOfMessage={new Date(message.createdAt)}
-            deleteRecord={deleteMutation}
-            id={message._id.toString()}
-          />
-        ))}
+        {allMessages.map((message) => {
+          const { imageId, text, createdAt } = message._doc;
+          return (
+            <Message
+              key={imageId}
+              textMessage={text}
+              imageUrl={message.url}
+              timeOfMessage={new Date(createdAt)}
+              deleteRecord={deleteMutation}
+              id={imageId}
+            />
+          );
+        })}
       </div>
       <div className="flex space-x-2 rounded-b-xl bg-white p-4">
         <input
@@ -158,7 +140,7 @@ const Chat = () => {
               xmlns="http://www.w3.org/2000/svg"
               width="30"
               height="30"
-              // fill="#000000"
+              //   fill="#000000"
               className=" fill-blue-600 text-blue-600"
               viewBox="0 0 256 256"
             >
