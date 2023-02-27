@@ -1,9 +1,9 @@
 import { ChangeEvent, useState } from "react";
 import { api } from "Y/utils/api";
-import { Message } from "src/models/user.model";
 import Messages from "./Messages";
 import axios from "axios";
-import { ObjectId } from "mongodb";
+import { v4 as uuidv4 } from "uuid";
+import { Message } from "Y/types";
 
 const Chat = () => {
   const [image, setImage] = useState<File>();
@@ -22,7 +22,7 @@ const Chat = () => {
           isDeleted: false,
           createdAt: new Date(),
           updatedAt: new Date(),
-          _id: new ObjectId() as any,
+          _id: uuidv4(),
         };
         if (!prev) return [newMessage];
         return [...prev, newMessage];
@@ -34,7 +34,6 @@ const Chat = () => {
       if (!ctx) return;
       trpc.user.all.setData(undefined, () => ctx.prevMessageData);
     },
-    onSettled: async () => {},
   });
 
   const { mutate: deleteMutation } = api.user.delete.useMutation({
@@ -84,7 +83,7 @@ const Chat = () => {
     const UPLOAD_MAX_FILE_SIZE = 5000000;
     if (image && image.size > UPLOAD_MAX_FILE_SIZE) return;
 
-    let props = {
+    const props = {
       text,
       hasImage: !!image,
       type: image?.type,
@@ -170,7 +169,7 @@ const Chat = () => {
           tabIndex={2}
           disabled={!text}
           className="w-24 cursor-pointer rounded bg-blue-500 px-4 py-2 text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-gray-200"
-          onClick={handleSubmit}
+          onClick={() => void handleSubmit()}
         >
           Send
         </button>

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import messageModel, { Message } from "src/models/user.model";
+import messageModel, { MessageDocument } from "src/models/user.model";
 import { createTRPCRouter, publicProcedure } from "Y/server/api/trpc";
 import s3 from "src/utils/aws";
 import { v4 as uuidv4 } from "uuid";
@@ -42,7 +42,7 @@ export const userRouter = createTRPCRouter({
       }
     }),
 
-  all: publicProcedure.query(async (): Promise<Message[]> => {
+  all: publicProcedure.query(async (): Promise<MessageDocument[]> => {
     const allMessages = await messageModel()
       .find({
         isDeleted: false,

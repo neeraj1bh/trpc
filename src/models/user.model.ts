@@ -7,6 +7,15 @@ export interface Message {
   updatedAt: Date;
   _id: ObjectId;
   imageId?: string;
+}
+
+export interface MessageDocument {
+  text: string;
+  isDeleted?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  _id: string | ObjectId;
+  imageId?: string;
   url?: string;
 }
 
