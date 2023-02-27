@@ -104,53 +104,52 @@ const Chat = () => {
   };
 
   return (
-    <div className="flex max-w-xl flex-col rounded-xl border border-gray-300">
-      <div className="flex h-96 max-h-96 flex-col gap-3 overflow-y-scroll rounded-t-xl border-b border-gray-500 bg-gray-50 px-4 py-4 shadow-lg">
-        {allMessages.map((message) => {
-          const { _id, text, createdAt } = message;
-          return (
-            <Messages
-              key={_id.toString()}
-              textMessage={text}
-              imageUrl={message?.url}
-              timeOfMessage={new Date(createdAt)}
-              deleteRecord={deleteMutation}
-              id={_id.toString()}
-            />
-          );
-        })}
+    <div className="flex max-w-xl flex-col rounded-xl border border-gray-300 shadow-2xl">
+      <div className="relative h-96 overflow-hidden rounded-t-xl border-b border-gray-500 bg-gray-50  ">
+        <div className="absolute bottom-0 flex max-h-96  w-full flex-col-reverse  gap-3 overflow-y-scroll p-4 pt-4 pb-2">
+          {allMessages.map((message) => {
+            const { _id, text, createdAt } = message;
+            return (
+              <Messages
+                key={_id.toString()}
+                textMessage={text}
+                imageUrl={message?.url}
+                timeOfMessage={new Date(createdAt)}
+                deleteRecord={deleteMutation}
+                id={_id.toString()}
+              />
+            );
+          })}
+        </div>
       </div>
       <div className="flex space-x-2 rounded-b-xl bg-white p-4">
         <input
           type={"text"}
           value={text}
+          tabIndex={1}
           onChange={(e) => {
             setText(e.target.value);
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && text) {
-              handleSubmit;
+              return void handleSubmit();
             }
           }}
           placeholder="Enter Message ..."
           className="w-80 rounded border-2 border-gray-700 px-4 py-2"
         />
-        <div className="rounded border-2 border-gray-700 p-2">
+        <div className="relative h-11 w-11 rounded border-2 border-gray-700">
           <input
             type={"file"}
-            tabIndex={0}
             id="image"
-            className="hidden"
+            className="absolute z-10 h-full w-full cursor-pointer opacity-0"
             accept="image/*"
             onChange={showPreview}
           />
-          <label htmlFor="image" tabIndex={1} className="cursor-pointer">
+          <label htmlFor="image" tabIndex={2} className="cursor-pointer">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="30"
-              height="30"
-              //   fill="#000000"
-              className=" fill-blue-600 text-blue-600"
+              fill="#000000"
               viewBox="0 0 256 256"
             >
               <rect width="256" height="256" fill="none"></rect>
@@ -166,7 +165,7 @@ const Chat = () => {
           </label>
         </div>
         <button
-          tabIndex={2}
+          tabIndex={3}
           disabled={!text}
           className="w-24 cursor-pointer rounded bg-blue-500 px-4 py-2 text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-gray-200"
           onClick={() => void handleSubmit()}

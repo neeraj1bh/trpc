@@ -1,5 +1,3 @@
-import Image from "next/image";
-import { useState } from "react";
 import { Trash } from "Y/assets/icons/Trash";
 
 interface MessageProps {
@@ -31,7 +29,9 @@ const Messages = ({
         ) : null}
       </div>
       <p className="mt-1  text-xs text-gray-500">
-        {timeOfMessage.toDateString()}
+        {timeOfMessage.toDateString() +
+          " " +
+          timeOfMessage.toLocaleTimeString()}
       </p>
     </div>
   );

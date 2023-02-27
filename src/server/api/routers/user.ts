@@ -47,6 +47,9 @@ export const userRouter = createTRPCRouter({
       .find({
         isDeleted: false,
       })
+      .sort({
+        createdAt: -1,
+      })
       .lean();
     const extendedImages = await Promise.all(
       allMessages.map(async (message) => {
