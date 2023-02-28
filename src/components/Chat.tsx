@@ -1,35 +1,14 @@
-import { ChangeEvent, useCallback, useEffect, useState } from "react";
+import { ChangeEvent, useState } from "react";
 import { api } from "Y/utils/api";
 import Messages from "./Messages";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { Message } from "Y/types";
-import { MessageDocument } from "Y/models/user.model";
 
 const Chat = () => {
   const [image, setImage] = useState<File>();
-  const [addMessages, setAddMessages] = useState<MessageDocument[]>();
   const [text, setText] = useState("");
   const trpc = api.useContext();
-
-  const onAddMessages = useCallback((messages: MessageDocument[]) => {
-    setAddMessages(messages);
-  }, []);
-
-  useEffect(() => {
-    onAddMessages;
-  }, [onAddMessages]);
-
-  api.user.onAddMessage.useSubscription(undefined, {
-    onData(messages) {
-      onAddMessages([messages]);
-    },
-    onError: (err) => {
-      console.error("Subscription error:", err);
-      // we might have missed a message - invalidate cache
-      //   await trpc.user.all.invalidate();
-    },
-  });
 
   const { mutateAsync: addMutation } = api.user.addMessage.useMutation({
     onMutate: async (newPost) => {
@@ -79,14 +58,17 @@ const Chat = () => {
     },
   });
 
-  //   const {
-  //     data: allMessages,
-  //     isLoading,
-  //     isError,
-  //   } = api.user.all.useQuery(
-  //     undefined,
-  //     { staleTime: 600 * 1000 } // cache data for 600 seconds
-  //   );
+  const {
+    data: allMessages,
+    isLoading,
+    isError,
+  } = api.user.all.useQuery(
+    undefined,
+    { staleTime: 600 * 1000 } // cache data for 600 seconds
+  );
+
+  if (isLoading) return <div>Loading messages 🔄</div>;
+  if (isError) return <div>Error fetching messages ❌</div>;
 
   function showPreview(event: ChangeEvent<HTMLInputElement>) {
     if (event.target.files) {
@@ -118,14 +100,14 @@ const Chat = () => {
       });
     }
 
-    // await trpc.user.all.refetch();
+    await trpc.user.all.refetch();
   };
 
   return (
     <div className="flex max-w-xl flex-col rounded-xl border border-gray-300 shadow-2xl">
       <div className="relative h-96 overflow-hidden rounded-t-xl border-b border-gray-500 bg-gray-50  ">
         <div className="absolute bottom-0 flex max-h-96  w-full flex-col-reverse  gap-3 overflow-y-scroll p-4 pt-4 pb-2">
-          {addMessages?.map((message) => {
+          {allMessages.map((message) => {
             const { _id, text, createdAt } = message;
             return (
               <Messages

@@ -4,17 +4,11 @@
  *
  * We also create a few inference helpers for input and output types.
  */
-import {
-  httpBatchLink,
-  loggerLink,
-  createWSClient,
-  splitLink,
-  wsLink,
-} from "@trpc/client";
+import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCNext } from "@trpc/next";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import superjson from "superjson";
-import ws from "ws";
+
 import { type AppRouter } from "Y/server/api/root";
 
 const getBaseUrl = () => {
@@ -45,18 +39,8 @@ export const api = createTRPCNext<AppRouter>({
             process.env.NODE_ENV === "development" ||
             (opts.direction === "down" && opts.result instanceof Error),
         }),
-        splitLink({
-          condition: (op) => {
-            return op.type === "subscription";
-          },
-          true: wsLink({
-            client: createWSClient({
-              url: `ws://localhost:3001`,
-            }),
-          }),
-          false: httpBatchLink({
-            url: `${getBaseUrl()}/api/trpc`,
-          }),
+        httpBatchLink({
+          url: `${getBaseUrl()}/api/trpc`,
         }),
       ],
     };
