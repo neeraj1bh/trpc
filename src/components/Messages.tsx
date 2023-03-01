@@ -5,6 +5,7 @@ import { Trash } from "Y/assets/icons/Trash";
 interface MessageProps {
   textMessage: string;
   imageUrl?: string;
+  hasImage: boolean;
   timeOfMessage: Date;
   deleteRecord: (id: string) => void;
   id: string;
@@ -14,12 +15,13 @@ const Messages = ({
   textMessage,
   imageUrl,
   timeOfMessage,
+  hasImage,
   deleteRecord,
   id,
 }: MessageProps) => {
   return (
     <div className="group">
-      <div className="relative inline-block max-w-sm overflow-hidden rounded-md ">
+      <div className="relative inline-block max-w-sm ">
         <div className="top-1 -right-7 hidden group-hover:absolute group-hover:block">
           <Trash className="h-5 w-6" onClick={() => deleteRecord(id)} />
         </div>
@@ -30,7 +32,7 @@ const Messages = ({
             src={imageUrl}
             alt="image-message"
             className="object-contain"
-            width={200}
+            width={384}
             height={200}
           />
         ) : null}
