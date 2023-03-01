@@ -26,7 +26,9 @@ const Messages = ({
           <Trash className="h-5 w-6" onClick={() => deleteRecord(id)} />
         </div>
 
-        <p className=" bg-gray-200 py-2 px-4 text-sm">{textMessage}</p>
+        <p className="break-words bg-gray-200 py-2 px-4 text-sm">
+          {textMessage}
+        </p>
         {imageUrl ? (
           <Image
             src={imageUrl}

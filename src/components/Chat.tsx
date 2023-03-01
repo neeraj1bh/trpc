@@ -113,7 +113,6 @@ const Chat = () => {
       setImage(undefined);
     } catch (err) {
       console.log({ err });
-      //   toast.error(err as string);
     }
   };
 

@@ -7,7 +7,7 @@ import {
   useRef,
 } from "react";
 import { PaperClip } from "Y/assets/icons/PaperClip";
-import { imageExtensions } from "Y/utils/imageExtensions";
+import { ACCEPTED_IMAGE_TYPES } from "Y/utils/constants";
 
 interface MessageInputProps {
   onSubmit: () => Promise<void>;
@@ -59,9 +59,7 @@ const MessageInput = ({
           id="image"
           ref={fileRef}
           className="hidden"
-          accept={imageExtensions
-            .map((extension) => `image/${extension}`)
-            .join(", ")}
+          accept={ACCEPTED_IMAGE_TYPES.join(",")}
           onChange={onFileSelect}
         />
         <button

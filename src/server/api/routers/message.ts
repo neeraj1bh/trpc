@@ -1,3 +1,4 @@
+import { ACCEPTED_IMAGE_TYPES } from "Y/utils/constants";
 import { z } from "zod";
 import messageModel, { MessageDocument } from "src/models/user.model";
 import { createTRPCRouter, publicProcedure } from "Y/server/api/trpc";
@@ -13,7 +14,13 @@ export const userRouter = createTRPCRouter({
         text: z.string({
           required_error: "Add your message",
         }),
-        type: z.string().optional(),
+        type: z
+          .string()
+          .optional()
+          .refine((type) => ACCEPTED_IMAGE_TYPES.includes(type), {
+            message: ".jpg, .jpeg, .png and .webp files are accepted.",
+          }),
+
         hasImage: z.boolean().optional(),
       })
     )
@@ -22,60 +29,67 @@ export const userRouter = createTRPCRouter({
       const name = `images/${imageId}`;
 
       const { text, type, hasImage } = input;
-      await messageModel().create({
-        text,
-        imageId: hasImage ? name : "",
-      });
 
-      if (hasImage) {
-        console.log("type", type);
-        const fileParams = {
-          Bucket: BUCKET_NAME,
-          Key: name,
-          Expires: 6000,
-          ContentType: type,
-          ACL: "private",
-        };
+      let url = "";
 
-        const url = await s3.getSignedUrlPromise("putObject", fileParams);
+      try {
+        if (hasImage) {
+          const fileParams = {
+            Bucket: BUCKET_NAME,
+            Key: name,
+            Expires: 6000,
+            ContentType: type,
+            ACL: "private",
+          };
+          url = await s3.getSignedUrlPromise("putObject", fileParams);
+        }
+
+        await messageModel().create({
+          text,
+          imageId: hasImage ? name : "",
+        });
+
         return url;
+      } catch (e) {
+        throw new Error("Cant post message, please try again");
       }
     }),
 
   all: publicProcedure.query(async (): Promise<MessageDocument[]> => {
-    const allMessages = await messageModel()
-      .find({
-        isDeleted: false,
-      })
-      .sort({
-        createdAt: -1,
-      })
-      .lean();
-    const extendedImages = await Promise.all(
-      allMessages.map(async (message) => {
-        // console.log("message", message);
+    try {
+      const allMessages = await messageModel()
+        .find({
+          isDeleted: false,
+        })
+        .sort({
+          createdAt: -1,
+        })
+        .lean();
+      const extendedImages = await Promise.all(
+        allMessages.map(async (message) => {
+          if (message.imageId) {
+            const name = message.imageId;
 
-        if (message.imageId) {
-          const name = message.imageId;
+            const url = await s3.getSignedUrlPromise("getObject", {
+              Bucket: BUCKET_NAME,
+              Expires: 100000,
+              Key: name,
+            });
 
-          const url = await s3.getSignedUrlPromise("getObject", {
-            Bucket: BUCKET_NAME,
-            Expires: 100000,
-            Key: name,
-          });
+            return { url, ...message };
+          }
 
-          return { url, ...message };
-        }
+          return message;
+        })
+      );
 
-        return message;
-      })
-    );
-
-    return extendedImages;
+      return extendedImages;
+    } catch (e) {
+      throw new Error("Cant get messages, please try again");
+    }
   }),
 
   delete: publicProcedure.input(z.string()).mutation(async ({ input }) => {
-    console.log({ input });
     try {
       await messageModel().updateOne(
         {
@@ -88,7 +102,7 @@ export const userRouter = createTRPCRouter({
         }
       );
     } catch (err) {
-      console.log({ err });
+      throw new Error("Cant delete messages, please try again");
     }
   }),
 });
